@@ -1,0 +1,143 @@
+# Local aliases for stevebs-affirm (safe for public repo; edit as you like)
+
+function tssh() {
+  tsh status >/dev/null 2>&1
+  if [ $? -ne 0 ]; then echo "Not logged in; To login type 'tlogin <env>' where <env> is dev, stage, or prod" && return 1; fi
+  login=$(tsh status | grep -m 1 Logins | awk '/Logins:/ {gsub(/,/, "",$2);print $2; exit}')
+  tsh ssh -A "${login}"@$1 || echo "Failed to login with username $login"
+}
+
+function tlogin() {
+
+  cluster=$1
+  if [ -z "$cluster" ]; then
+    echo "Cluster not set"
+    echo "Run: tlogin {{ CLUSTER }}, where {{ CLUSTER }} can be prod, stage or dev"
+    return 0
+  fi
+
+  if [[ $cluster == "prod" ]]; then
+    cluster="keyhole"
+  fi
+  echo "Connecting to teleport.core.affirm-${cluster}.com"
+  out=$(tsh login --proxy=teleport.core.affirm-${cluster}.com:443)
+  echo "${out}"
+}
+
+function git_add_all_status() {
+  git add .
+  git status
+}
+
+export ATT_PATH=/Users/"$USER"/Developer/all-the-things # replace this with the path to where you cloned `all-the-things`
+export DEPLOYABLES="$ATT_PATH"/deployable
+
+function vzsh() {
+  vim ~/.zshrc
+}
+
+function szsh() {
+  source ~/.zshrc
+}
+
+function srcv() {
+  # Specify deployable target
+  local dt=${1}
+
+  echo Activating virtual environment for "$dt"
+
+  if [[ -d "$DEPLOYABLES"/"$dt"/src/.venv39 ]]; then
+    . "$DEPLOYABLES"/"$dt"/src/.venv39/bin/activate
+  elif [[ -d "$DEPLOYABLES"/"$dt"/src/.venv3 ]]; then
+    . "$DEPLOYABLES"/"$dt"/src/.venv3/bin/activate
+  else
+    echo "$dt virtual environment not found. Did you forget to \`make dev\`?"
+  fi
+}
+
+function cds() {
+  local dt="capital-data-sourcing"
+
+  echo Activating virtual environment for "$dt"
+
+  if [[ -d "$DEPLOYABLES"/"$dt"/src/.venv39 ]]; then
+    . "$DEPLOYABLES"/"$dt"/src/.venv39/bin/activate
+  elif [[ -d "$DEPLOYABLES"/"$dt"/src/.venv3 ]]; then
+    . "$DEPLOYABLES"/"$dt"/src/.venv3/bin/activate
+  else
+    echo "$dt virtual environment not found. Did you forget to \`make dev\`?"
+  fi
+}
+
+function orig() {
+  local dt="originations"
+
+  echo Activating virtual environment for "$dt"
+
+  if [[ -d "$DEPLOYABLES"/"$dt"/src/.venv39 ]]; then
+    . "$DEPLOYABLES"/"$dt"/src/.venv39/bin/activate
+  elif [[ -d "$DEPLOYABLES"/"$dt"/src/.venv3 ]]; then
+    . "$DEPLOYABLES"/"$dt"/src/.venv3/bin/activate
+  else
+    echo "$dt virtual environment not found. Did you forget to \`make dev\`?"
+  fi
+}
+
+function fresh_pull() {
+  echo fetch and pull from main
+  git fetch
+  git pull origin master
+
+  echo Making deployable/monolith
+  att
+  make -C deployable/monolith dev
+  make -C deployable/originations dev
+  make -C deployable/capital-data-sourcing dev
+
+  echo All done
+}
+
+alias g='git'
+alias gb='git branch'
+alias gst='git status'
+alias gas='git_add_all_status'
+alias gco='git checkout'
+alias gcm='git checkout master'
+alias gcb='git checkout -b'
+alias gci='git commit'
+alias gpush='git push'
+alias gpull='git pull'
+alias gl='git log --oneline --decorate --color --graph'
+alias att='cd $ATT_PATH'
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ll='ls -lah'
+alias cx='cd ${1} && $ll'
+alias gp="git cherry pick"
+
+# --- Git autocompletion + branch name prompt ---
+# Ensure completion system is initialized
+autoload -Uz compinit && compinit
+autoload -Uz bashcompinit && bashcompinit
+
+# Enable vcs_info and prompt substitution
+autoload -Uz vcs_info
+autoload -Uz colors && colors
+setopt prompt_subst
+
+# Load git completion if available
+if [ -f /usr/share/zsh/site-functions/_git ]; then
+  fpath=(/usr/share/zsh/site-functions $fpath)
+elif [ -f /usr/local/share/zsh/site-functions/_git ]; then
+  fpath=(/usr/local/share/zsh/site-functions $fpath)
+elif [ -f /opt/homebrew/share/zsh/site-functions/_git ]; then
+  fpath=(/opt/homebrew/share/zsh/site-functions $fpath)
+fi
+
+# Configure vcs_info to show current branch
+precmd() { vcs_info }
+zstyle ':vcs_info:git:*' formats '(%b)'
+
+# Fancy prompt: user@host:path (branch) %
+PROMPT='%F{yellow}🌶️ %n%f:%F{yellow}%~%f %F{magenta} ${vcs_info_msg_0_}%f %F{magenta}-->%f '
+# --- end Git autocompletion setup ---

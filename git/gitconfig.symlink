@@ -1,0 +1,41 @@
+[user]
+	name = stevebs-affirm
+	email = steve.seelan@affirm.com
+[core]
+	editor = vim
+	pager = less -F -X
+	fsmonitor = true
+	untrackedcache = true
+[branch]
+	autosetuprebase = never
+[pull]
+	rebase = false
+	default = current
+[alias]
+	# Delete all branches already merged into master (keep master)
+	branch-cleanup = !git branch --merged master | grep -v master | xargs -n 1 git branch -d
+[filter "lfs"]
+	required = true
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+[push]
+	default = current
+[remote "origin"]
+	prune = true
+[url "git@github.com:"]
+	insteadOf = https://github.com/
+[help]
+	autocorrect = 15
+[github]
+	user = stevebs-affirm
+[credential]
+	helper = osxkeychain
+[init]
+	defaultBranch = main
+[commit]
+	gpgsign = false
+[http]
+	postBuffer = 5242880000
+[feature]
+	manyFiles = true
